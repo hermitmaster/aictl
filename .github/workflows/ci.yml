@@ -32,7 +32,8 @@ jobs:
         run: go mod verify
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          go build -v -ldflags "-X github.com/hermitmaster/aictl/internal/cli.version=0.1.${{ github.run_number }} -X github.com/hermitmaster/aictl/internal/cli.commit=${{ github.sha }} -X github.com/hermitmaster/aictl/internal/cli.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" ./...
 
   test:
     runs-on: ubuntu-latest
