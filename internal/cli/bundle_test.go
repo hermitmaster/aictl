@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -937,19 +936,4 @@ func TestBundleMultipleToolsInstall(t *testing.T) {
 	if string(cursorContent) != content {
 		t.Error("Cursor content mismatch")
 	}
-}
-
-// Capture stdout helper for testing output
-func captureOutput(f func()) string {
-	var buf bytes.Buffer
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	w.Close()
-	os.Stdout = old
-	buf.ReadFrom(r)
-	return buf.String()
 }
