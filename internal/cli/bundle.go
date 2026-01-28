@@ -198,6 +198,8 @@ func runBundle(cmd *cobra.Command, args []string) error {
 		}
 
 		toolSuccessCount := 0
+		alreadyExistsCount := 0
+		compatibleToolCount := 0
 		for _, toolName := range tools {
 			tool := config.Tool(toolName)
 			inst, err := installer.GetInstaller(tool)
@@ -214,6 +216,8 @@ func runBundle(cmd *cobra.Command, args []string) error {
 				}
 				continue
 			}
+
+			compatibleToolCount++
 
 			// Install using the appropriate installer
 			var installedFiles []string
@@ -243,7 +247,13 @@ func runBundle(cmd *cobra.Command, args []string) error {
 			}
 
 			if installErr != nil {
-				if verboseFlag {
+				// Check if the error is due to file already existing
+				if strings.Contains(installErr.Error(), "already exists") {
+					alreadyExistsCount++
+					if verboseFlag {
+						fmt.Printf("  → %s: already up to date\n", tool)
+					}
+				} else if verboseFlag {
 					color.Yellow("  ⚠ Failed to install to %s: %v", tool, installErr)
 				}
 				continue
@@ -263,8 +273,15 @@ func runBundle(cmd *cobra.Command, args []string) error {
 			color.Green("✓ Installed %s to %d tool(s) (%s)", res.Name, toolSuccessCount, scopeStr)
 			st.AddInstalled(installedResource)
 			successCount++
-		} else {
+		} else if alreadyExistsCount > 0 {
+			// All compatible tools already have this resource
+			fmt.Printf("· %s: already up to date\n", res.Name)
+			skipCount++
+		} else if compatibleToolCount == 0 {
 			color.Yellow("⚠ Skipped %s: no compatible tools", res.Name)
+			skipCount++
+		} else {
+			color.Yellow("⚠ Skipped %s: installation failed", res.Name)
 			skipCount++
 		}
 	}
