@@ -115,7 +115,7 @@ func (w *WindsurfInstaller) installMultiFile(res *resource.Resource, global bool
 	}
 
 	var installedFiles []string
-	sourceDir := filepath.Dir(res.SourcePath)
+	sourceDir := res.SourcePath // SourcePath is the directory for multi-file resources
 
 	for _, fm := range res.Files {
 		srcPath := filepath.Join(sourceDir, fm.Src)
