@@ -71,7 +71,13 @@ func (w *WindsurfInstaller) installSingleFile(res *resource.Resource, global boo
 		return "", err
 	}
 
-	destPath := filepath.Join(destDir, res.Name+".md")
+	// Skills require a subdirectory: skills/<name>/SKILL.md
+	var destPath string
+	if res.Type == resource.TypeSkill {
+		destPath = filepath.Join(destDir, res.Name, "SKILL.md")
+	} else {
+		destPath = filepath.Join(destDir, res.Name+".md")
+	}
 
 	// Check if file exists
 	if _, err := os.Stat(destPath); err == nil && !force {
@@ -156,7 +162,13 @@ func (w *WindsurfInstaller) InstallFromReader(res *resource.Resource, content io
 		return "", err
 	}
 
-	destPath := filepath.Join(destDir, res.Name+".md")
+	// Skills require a subdirectory: skills/<name>/SKILL.md
+	var destPath string
+	if res.Type == resource.TypeSkill {
+		destPath = filepath.Join(destDir, res.Name, "SKILL.md")
+	} else {
+		destPath = filepath.Join(destDir, res.Name+".md")
+	}
 
 	// Check if file exists
 	if _, err := os.Stat(destPath); err == nil && !force {
