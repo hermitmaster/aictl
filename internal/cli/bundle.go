@@ -80,8 +80,34 @@ func runBundle(cmd *cobra.Command, args []string) error {
 	global := cfg.GetScope() == "global"
 	scopeStr := cfg.GetScope()
 
-	// Initialize state manager
+	// Initialize app config and tap manager
 	appCfg := config.DefaultConfig()
+
+	// Auto-add taps declared in config but not yet installed
+	if len(cfg.Taps) > 0 {
+		tapMgr, err := tap.NewManager(appCfg)
+		if err != nil {
+			return fmt.Errorf("error initializing tap manager: %w", err)
+		}
+
+		for _, tapCfg := range cfg.Taps {
+			if !tapMgr.Exists(tapCfg.Name) {
+				if dryRunFlag {
+					fmt.Printf("Would add tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
+				} else {
+					fmt.Printf("Adding tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
+					if _, err := tapMgr.Add(tapCfg.Name, tapCfg.URL); err != nil {
+						color.Yellow("⚠ Failed to add tap %s: %v", tapCfg.Name, err)
+					} else {
+						color.Green("✓ Added tap: %s", tapCfg.Name)
+					}
+				}
+			}
+		}
+		fmt.Println()
+	}
+
+	// Initialize state manager
 	stateMgr, err := state.NewStateManager(appCfg)
 	if err != nil {
 		return fmt.Errorf("error initializing state: %w", err)
