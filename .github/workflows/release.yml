@@ -91,7 +91,18 @@ jobs:
           cd dist
           sha256sum * > checksums.txt
 
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.next_version.outputs.new_version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.next_version.outputs.new_version }} already exists, skipping release"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -99,6 +110,7 @@ jobs:
           git push origin ${{ steps.next_version.outputs.new_version }}
 
       - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.next_version.outputs.new_version }}
