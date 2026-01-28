@@ -83,29 +83,36 @@ func runBundle(cmd *cobra.Command, args []string) error {
 	// Initialize app config and tap manager
 	appCfg := config.DefaultConfig()
 
-	// Auto-add taps declared in config but not yet installed
-	if len(cfg.Taps) > 0 {
-		tapMgr, err := tap.NewManager(appCfg)
-		if err != nil {
-			return fmt.Errorf("error initializing tap manager: %w", err)
-		}
+	// Auto-add and update taps declared in config
+	tapMgr, err := tap.NewManager(appCfg)
+	if err != nil {
+		return fmt.Errorf("error initializing tap manager: %w", err)
+	}
 
-		for _, tapCfg := range cfg.Taps {
-			if !tapMgr.Exists(tapCfg.Name) {
-				if dryRunFlag {
-					fmt.Printf("Would add tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
+	// Add missing taps from config
+	for _, tapCfg := range cfg.Taps {
+		if !tapMgr.Exists(tapCfg.Name) {
+			if dryRunFlag {
+				fmt.Printf("Would add tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
+			} else {
+				fmt.Printf("Adding tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
+				if _, err := tapMgr.Add(tapCfg.Name, tapCfg.URL); err != nil {
+					color.Yellow("⚠ Failed to add tap %s: %v", tapCfg.Name, err)
 				} else {
-					fmt.Printf("Adding tap: %s (%s)\n", tapCfg.Name, tapCfg.URL)
-					if _, err := tapMgr.Add(tapCfg.Name, tapCfg.URL); err != nil {
-						color.Yellow("⚠ Failed to add tap %s: %v", tapCfg.Name, err)
-					} else {
-						color.Green("✓ Added tap: %s", tapCfg.Name)
-					}
+					color.Green("✓ Added tap: %s", tapCfg.Name)
 				}
 			}
 		}
-		fmt.Println()
 	}
+
+	// Update all taps to get latest resources
+	if !dryRunFlag {
+		fmt.Println("Updating taps...")
+		if err := tapMgr.UpdateAll(); err != nil {
+			color.Yellow("⚠ Failed to update taps: %v", err)
+		}
+	}
+	fmt.Println()
 
 	// Initialize state manager
 	stateMgr, err := state.NewStateManager(appCfg)
@@ -209,20 +216,30 @@ func runBundle(cmd *cobra.Command, args []string) error {
 			}
 
 			// Install using the appropriate installer
-			var destPath string
+			var installedFiles []string
 			var installErr error
 
-			switch typedInst := inst.(type) {
-			case *installer.WindsurfInstaller:
-				destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
-			case *installer.CursorInstaller:
-				destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
-			case *installer.AiderInstaller:
-				destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
-			case *installer.ContinueInstaller:
-				destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
-			default:
-				continue
+			// Use full Install method for multi-file resources (which have SourcePath set)
+			// Use InstallFromReader for bundled resources (content passed as string)
+			if res.IsMultiFile() && res.SourcePath != "" {
+				installedFiles, installErr = inst.Install(res, global, forceFlag)
+			} else {
+				var destPath string
+				switch typedInst := inst.(type) {
+				case *installer.WindsurfInstaller:
+					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+				case *installer.CursorInstaller:
+					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+				case *installer.AiderInstaller:
+					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+				case *installer.ContinueInstaller:
+					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+				default:
+					continue
+				}
+				if destPath != "" {
+					installedFiles = []string{destPath}
+				}
 			}
 
 			if installErr != nil {
@@ -233,11 +250,11 @@ func runBundle(cmd *cobra.Command, args []string) error {
 			}
 
 			installedResource.Tools[string(tool)] = state.ToolInstallInfo{
-				Files: []string{destPath},
+				Files: installedFiles,
 			}
 
 			if verboseFlag {
-				fmt.Printf("  → %s: %s\n", tool, destPath)
+				fmt.Printf("  → %s: %v\n", tool, installedFiles)
 			}
 			toolSuccessCount++
 		}
