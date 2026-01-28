@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hermitmaster/aictl/internal/config"
 	"github.com/hermitmaster/aictl/internal/resource"
@@ -119,7 +120,8 @@ func (w *WindsurfInstaller) installMultiFile(res *resource.Resource, global bool
 
 	for _, fm := range res.Files {
 		srcPath := filepath.Join(sourceDir, fm.Src)
-		destPath := filepath.Join(baseDir, fm.Dest)
+		// Map generic paths to tool-specific directories
+		destPath := w.mapDestPath(baseDir, fm.Dest)
 
 		// Check if file exists
 		if _, err := os.Stat(destPath); err == nil && !force {
@@ -149,6 +151,38 @@ func (w *WindsurfInstaller) Uninstall(res *resource.Resource, files []string, gl
 		}
 	}
 	return nil
+}
+
+// mapDestPath translates generic resource paths to tool-specific paths
+func (w *WindsurfInstaller) mapDestPath(baseDir, dest string) string {
+	// Map generic directory names to tool-specific directories
+	// e.g., "workflows/foo.md" -> "global_workflows/foo.md" for Windsurf
+	parts := strings.SplitN(dest, "/", 2)
+	if len(parts) < 2 {
+		return filepath.Join(baseDir, dest)
+	}
+
+	dir, rest := parts[0], parts[1]
+	switch dir {
+	case "workflows":
+		if w.Config.WorkflowsDir != "" {
+			return filepath.Join(baseDir, w.Config.WorkflowsDir, rest)
+		}
+	case "rules":
+		if w.Config.RulesDir != "" {
+			return filepath.Join(baseDir, w.Config.RulesDir, rest)
+		}
+	case "skills":
+		if w.Config.SkillsDir != "" {
+			return filepath.Join(baseDir, w.Config.SkillsDir, rest)
+		}
+	case "bin":
+		if w.Config.BinDir != "" {
+			return filepath.Join(baseDir, w.Config.BinDir, rest)
+		}
+	}
+
+	return filepath.Join(baseDir, dest)
 }
 
 // InstallFromReader installs a resource from an io.Reader (for embedded resources)
