@@ -197,6 +197,59 @@ func TestWindsurfInstallerInstallUnsupportedType(t *testing.T) {
 	}
 }
 
+func TestWindsurfInstallerInstallSkillInSubdirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	inst := &WindsurfInstaller{
+		BaseInstaller: BaseInstaller{
+			Config: config.ToolConfig{
+				Name:           config.ToolWindsurf,
+				GlobalDir:      tmpDir,
+				SkillsDir:      "skills",
+				SupportsSkills: true,
+			},
+		},
+	}
+
+	res := &resource.Resource{
+		Name:        "test-skill",
+		Version:     "1.0.0",
+		Type:        resource.TypeSkill,
+		Description: "Test skill",
+	}
+
+	content := `---
+name: test-skill
+version: 1.0.0
+type: skill
+description: Test skill
+---
+
+# Test Skill
+
+This is test content.`
+
+	destPath, err := inst.InstallFromReader(res, strings.NewReader(content), true, false)
+	if err != nil {
+		t.Fatalf("InstallFromReader() error = %v", err)
+	}
+
+	// Skills should be installed in subdirectory: skills/<name>/SKILL.md
+	expectedPath := filepath.Join(tmpDir, "skills", "test-skill", "SKILL.md")
+	if destPath != expectedPath {
+		t.Errorf("destPath = %v, want %v", destPath, expectedPath)
+	}
+
+	// Verify file was created
+	data, err := os.ReadFile(destPath)
+	if err != nil {
+		t.Fatalf("Failed to read installed file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("Content mismatch")
+	}
+}
+
 func TestWindsurfInstallerUninstall(t *testing.T) {
 	tmpDir := t.TempDir()
 
