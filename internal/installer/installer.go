@@ -140,6 +140,8 @@ func GetInstaller(tool config.Tool) (Installer, error) {
 		return NewAiderInstaller(), nil
 	case config.ToolContinue:
 		return NewContinueInstaller(), nil
+	case config.ToolClaudeCode:
+		return NewClaudeCodeInstaller(), nil
 	default:
 		return nil, fmt.Errorf("unsupported tool: %s", tool)
 	}

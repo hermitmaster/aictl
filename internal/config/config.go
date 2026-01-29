@@ -9,10 +9,11 @@ import (
 type Tool string
 
 const (
-	ToolWindsurf Tool = "windsurf"
-	ToolCursor   Tool = "cursor"
-	ToolAider    Tool = "aider"
-	ToolContinue Tool = "continue"
+	ToolWindsurf   Tool = "windsurf"
+	ToolCursor     Tool = "cursor"
+	ToolAider      Tool = "aider"
+	ToolContinue   Tool = "continue"
+	ToolClaudeCode Tool = "claude-code"
 
 	// DefaultRegistry is the default resource registry URL
 	DefaultRegistry = "https://github.com/hermitmaster/aictl-registry"
@@ -20,7 +21,7 @@ const (
 
 // AllTools returns all supported tools
 func AllTools() []Tool {
-	return []Tool{ToolWindsurf, ToolCursor, ToolAider, ToolContinue}
+	return []Tool{ToolWindsurf, ToolCursor, ToolAider, ToolContinue, ToolClaudeCode}
 }
 
 // ToolConfig holds configuration for a specific tool
@@ -101,6 +102,21 @@ func GetToolConfig(tool Tool) ToolConfig {
 			ScriptsDir:        "",
 			SupportsRules:     true,
 			SupportsWorkflows: false,
+			SupportsSkills:    false,
+			SupportsBin:       false,
+		}
+	case ToolClaudeCode:
+		return ToolConfig{
+			Name:              tool,
+			GlobalDir:         filepath.Join(home, ".claude"),
+			LocalDir:          ".claude",
+			RulesDir:          "",
+			WorkflowsDir:      "commands",
+			SkillsDir:         "",
+			BinDir:            "",
+			ScriptsDir:        "",
+			SupportsRules:     true,
+			SupportsWorkflows: true,
 			SupportsSkills:    false,
 			SupportsBin:       false,
 		}

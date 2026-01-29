@@ -8,15 +8,16 @@ import (
 
 func TestAllTools(t *testing.T) {
 	tools := AllTools()
-	if len(tools) != 4 {
-		t.Errorf("AllTools() returned %d tools, expected 4", len(tools))
+	if len(tools) != 5 {
+		t.Errorf("AllTools() returned %d tools, expected 5", len(tools))
 	}
 
 	expected := map[Tool]bool{
-		ToolWindsurf: true,
-		ToolCursor:   true,
-		ToolAider:    true,
-		ToolContinue: true,
+		ToolWindsurf:   true,
+		ToolCursor:     true,
+		ToolAider:      true,
+		ToolContinue:   true,
+		ToolClaudeCode: true,
 	}
 
 	for _, tool := range tools {
@@ -73,6 +74,15 @@ func TestGetToolConfig(t *testing.T) {
 			wantRulesDir:      "rules",
 			wantSupportsRules: true,
 			wantSupportsWorkflows: false,
+		},
+		{
+			name:              "claude-code",
+			tool:              ToolClaudeCode,
+			wantGlobalDir:     filepath.Join(home, ".claude"),
+			wantLocalDir:      ".claude",
+			wantRulesDir:      "",
+			wantSupportsRules: true,
+			wantSupportsWorkflows: true,
 		},
 		{
 			name:              "unknown tool",
