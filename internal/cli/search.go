@@ -10,13 +10,12 @@ import (
 
 	"github.com/hermitmaster/aictl/internal/config"
 	"github.com/hermitmaster/aictl/internal/tap"
-	"github.com/hermitmaster/aictl/resources"
 )
 
 var searchCmd = &cobra.Command{
 	Use:   "search [query]",
 	Short: "Search for resources",
-	Long: `Search for resources across bundled resources and installed taps.
+	Long: `Search for resources across installed taps.
 
 If no query is provided, lists all available resources.
 
@@ -24,7 +23,7 @@ Examples:
   aictl search                    # List all resources
   aictl search typescript         # Search for 'typescript'
   aictl search --type=rules       # Filter by type
-  aictl search --source=bundled   # Filter by source`,
+  aictl search --source=mycompany # Filter by tap`,
 	RunE: runSearch,
 }
 
@@ -35,7 +34,7 @@ var (
 
 func init() {
 	searchCmd.Flags().StringVar(&searchTypeFlag, "type", "", "Filter by resource type (rules, workflow, skill, bin)")
-	searchCmd.Flags().StringVar(&searchSourceFlag, "source", "", "Filter by source (bundled or tap name)")
+	searchCmd.Flags().StringVar(&searchSourceFlag, "source", "", "Filter by source (tap name)")
 	rootCmd.AddCommand(searchCmd)
 }
 
@@ -51,43 +50,27 @@ func runSearch(cmd *cobra.Command, args []string) error {
 
 	count := 0
 
-	// Search bundled resources
-	if searchSourceFlag == "" || searchSourceFlag == "bundled" {
-		bundled, err := resources.ListBundled()
-		if err == nil {
-			for _, res := range bundled {
-				if matchesSearch(res.Name, res.Description, query, string(res.Type), searchTypeFlag) {
-					desc := truncate(res.Description, 40)
-					_, _ = fmt.Fprintf(w, "bundled\t%s\t%s\t%s\t%s\n", res.Name, res.Type, res.Version, desc)
-					count++
-				}
-			}
-		}
-	}
-
 	// Search taps
-	if searchSourceFlag == "" || (searchSourceFlag != "" && searchSourceFlag != "bundled") {
-		cfg := config.DefaultConfig()
-		tapMgr, err := tap.NewManager(cfg)
+	cfg := config.DefaultConfig()
+	tapMgr, err := tap.NewManager(cfg)
+	if err == nil {
+		taps, err := tapMgr.List()
 		if err == nil {
-			taps, err := tapMgr.List()
-			if err == nil {
-				for _, t := range taps {
-					if searchSourceFlag != "" && searchSourceFlag != t.Name {
-						continue
-					}
+			for _, t := range taps {
+				if searchSourceFlag != "" && searchSourceFlag != t.Name {
+					continue
+				}
 
-					tapResources, err := tapMgr.ListResources(t.Name)
-					if err != nil {
-						continue
-					}
+				tapResources, err := tapMgr.ListResources(t.Name)
+				if err != nil {
+					continue
+				}
 
-					for _, res := range tapResources {
-						if matchesSearch(res.Name, res.Description, query, string(res.Type), searchTypeFlag) {
-							desc := truncate(res.Description, 40)
-							_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", t.Name, res.Name, res.Type, res.Version, desc)
-							count++
-						}
+				for _, res := range tapResources {
+					if matchesSearch(res.Name, res.Description, query, string(res.Type), searchTypeFlag) {
+						desc := truncate(res.Description, 40)
+						_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", t.Name, res.Name, res.Type, res.Version, desc)
+						count++
 					}
 				}
 			}

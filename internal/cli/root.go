@@ -59,14 +59,14 @@ var rootCmd = &cobra.Command{
 	Short: "AI coding assistant resource manager",
 	Long: `aictl is a registry-based CLI tool for installing AI coding assistant
 resources (rules, workflows, skills) across multiple tools like Windsurf,
-Cursor, and Aider.
+Cursor, Aider, Continue, and Claude Code.
 
-Inspired by Homebrew, aictl supports bundled resources and custom taps
-(Git repositories) for sharing resources across teams.
+Inspired by Homebrew, aictl supports custom taps (Git repositories) for
+sharing resources across teams.
 
 Quick Start:
   aictl search                     # Find available resources
-  aictl install bundled/jira-context --tool=windsurf
+  aictl install jira-context --tool=windsurf
   aictl list                       # Show installed resources
   aictl bundle                     # Install from .aiconfig
 

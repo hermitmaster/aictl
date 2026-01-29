@@ -13,7 +13,6 @@ import (
 	"github.com/hermitmaster/aictl/internal/resource"
 	"github.com/hermitmaster/aictl/internal/state"
 	"github.com/hermitmaster/aictl/internal/tap"
-	"github.com/hermitmaster/aictl/resources"
 )
 
 const defaultTapName = "default"
@@ -25,13 +24,11 @@ var installCmd = &cobra.Command{
 
 Resources can be specified as:
   - <name>             Install from the default registry
-  - bundled/<name>     Install from bundled resources
   - <tap>/<name>       Install from a custom tap
 
 Examples:
   aictl install jira-context
   aictl install typescript-rules --tool=cursor
-  aictl install bundled/code-review --local
   aictl install mycompany/internal-standards --tool=windsurf,cursor`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInstall,
@@ -59,35 +56,28 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	var content string
 	var err error
 
-	if source == "bundled" {
-		res, content, err = resources.LoadBundled(name)
-		if err != nil {
-			return fmt.Errorf("error loading bundled resource: %w", err)
-		}
-	} else {
-		// Try to load from a tap
-		cfg := config.DefaultConfig()
-		tapMgr, err := tap.NewManager(cfg)
-		if err != nil {
-			return fmt.Errorf("error initializing tap manager: %w", err)
-		}
+	// Load from a tap
+	cfg := config.DefaultConfig()
+	tapMgr, err := tap.NewManager(cfg)
+	if err != nil {
+		return fmt.Errorf("error initializing tap manager: %w", err)
+	}
 
-		// Auto-add default registry if needed
-		if source == defaultTapName && !tapMgr.Exists(defaultTapName) {
-			fmt.Printf("Adding default registry...\n")
-			if _, err := tapMgr.Add(defaultTapName, config.DefaultRegistry); err != nil {
-				return fmt.Errorf("error adding default registry: %w", err)
-			}
+	// Auto-add default registry if needed
+	if source == defaultTapName && !tapMgr.Exists(defaultTapName) {
+		fmt.Printf("Adding default registry...\n")
+		if _, err := tapMgr.Add(defaultTapName, config.DefaultRegistry); err != nil {
+			return fmt.Errorf("error adding default registry: %w", err)
 		}
+	}
 
-		if !tapMgr.Exists(source) {
-			return fmt.Errorf("unknown source '%s' (not a tap, use 'aictl tap add' to add it)", source)
-		}
+	if !tapMgr.Exists(source) {
+		return fmt.Errorf("unknown source '%s' (not a tap, use 'aictl tap add' to add it)", source)
+	}
 
-		res, content, err = tapMgr.LoadResource(source, name)
-		if err != nil {
-			return fmt.Errorf("error loading resource from tap '%s': %w", source, err)
-		}
+	res, content, err = tapMgr.LoadResource(source, name)
+	if err != nil {
+		return fmt.Errorf("error loading resource from tap '%s': %w", source, err)
 	}
 
 	// Validate the resource
@@ -117,7 +107,6 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Initialize state manager
-	cfg := config.DefaultConfig()
 	stateMgr, err := state.NewStateManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing state: %w", err)
@@ -171,6 +160,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		case *installer.AiderInstaller:
 			destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
 		case *installer.ContinueInstaller:
+			destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+		case *installer.ClaudeCodeInstaller:
 			destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
 		default:
 			if verboseFlag {

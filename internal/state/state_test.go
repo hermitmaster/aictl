@@ -14,7 +14,7 @@ func TestStateAddInstalled(t *testing.T) {
 
 	res := InstalledResource{
 		Name:        "test-resource",
-		Source:      "bundled",
+		Source:      "default",
 		Type:        "workflow",
 		Version:     "1.0.0",
 		InstalledAt: time.Now(),
@@ -159,7 +159,7 @@ func TestStateManagerLoadSave(t *testing.T) {
 		Installed: []InstalledResource{
 			{
 				Name:        "test-resource",
-				Source:      "bundled",
+				Source:      "default",
 				Type:        "workflow",
 				Version:     "1.0.0",
 				InstalledAt: time.Now().Truncate(time.Second),

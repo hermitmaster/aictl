@@ -1,13 +1,12 @@
 # aictl
 
-A registry-based CLI tool for installing AI coding assistant resources (rules, workflows, skills) across multiple tools like Windsurf, Cursor, Aider, and Continue.
+A registry-based CLI tool for installing AI coding assistant resources (rules, workflows, skills) across multiple tools like Windsurf, Cursor, Aider, Continue, and Claude Code.
 
-Inspired by Homebrew, `aictl` supports bundled resources and custom taps (Git repositories) for sharing resources across teams.
+Inspired by Homebrew, `aictl` supports custom taps (Git repositories) for sharing resources across teams.
 
 ## Features
 
-- **Multi-tool support**: Install resources to Windsurf, Cursor, Aider, and Continue
-- **Bundled resources**: Pre-packaged resources ready to install
+- **Multi-tool support**: Install resources to Windsurf, Cursor, Aider, Continue, and Claude Code
 - **Custom taps**: Add Git repositories as custom resource registries
 - **Declarative config**: Use `.aiconfig` for reproducible setups
 - **Global & local scopes**: Install system-wide or per-project
@@ -44,11 +43,11 @@ source ~/.local/share/aictl/completions/aictl.fish
 # Search for available resources
 aictl search
 
-# Install a bundled resource
-aictl install bundled/jira-context --tool=windsurf
+# Install a resource from the default registry
+aictl install jira-context --tool=windsurf
 
 # Install to multiple tools
-aictl install bundled/typescript-rules --tool=windsurf,cursor
+aictl install typescript-rules --tool=windsurf,cursor
 
 # List installed resources
 aictl list
@@ -61,14 +60,14 @@ aictl tools
 
 ### `aictl install <source>/<name>`
 
-Install a resource from bundled resources or a custom tap.
+Install a resource from the default registry or a custom tap.
 
 ```bash
-aictl install bundled/jira-context              # Install to detected tools
-aictl install bundled/typescript-rules -t cursor # Install to specific tool
-aictl install mycompany/internal-rules          # Install from tap
-aictl install bundled/code-review --local       # Install to project directory
-aictl install bundled/rules --force             # Overwrite existing files
+aictl install jira-context                      # Install to detected tools
+aictl install typescript-rules -t cursor        # Install to specific tool
+aictl install mycompany/internal-rules          # Install from custom tap
+aictl install code-review --local               # Install to project directory
+aictl install rules --force                     # Overwrite existing files
 ```
 
 ### `aictl uninstall <name>`
@@ -97,9 +96,9 @@ Search for available resources.
 
 ```bash
 aictl search                    # List all resources
-aictl search typescript         # Search by name/description
+aictl search typescript         # Search for 'typescript'
 aictl search --type=rules       # Filter by type
-aictl search --source=bundled   # Filter by source
+aictl search --source=mycompany # Filter by tap
 ```
 
 ### `aictl tools`
@@ -112,11 +111,12 @@ aictl tools
 
 Output:
 ```
-TOOL      STATUS     GLOBAL CONFIG                     LOCAL CONFIG  SUPPORTS
-windsurf  detected   ~/.codeium/windsurf               .windsurf     rules, workflows, skills, bin
-cursor    not found  ~/.cursor                         .cursor       rules
-aider     not found  ~/.aider                          .aider        rules
-continue  not found  ~/.continue                       .continue     rules
+TOOL        STATUS     GLOBAL CONFIG                     LOCAL CONFIG   SUPPORTS
+windsurf    detected   ~/.codeium/windsurf               .windsurf      rules, workflows, skills, bin
+cursor      not found  ~/.cursor                         .cursor        rules
+aider       not found  ~/.aider                          .aider         rules
+continue    not found  ~/.continue                       .continue      rules
+claude-code not found  ~/.claude                         .claude        rules, workflows
 ```
 
 ### `aictl bundle`
@@ -171,13 +171,13 @@ taps:
 # Resources to install
 install:
   # Install to all tools
-  - name: bundled/typescript-rules
+  - name: default/typescript-rules
 
   # Install to specific tools only
-  - name: bundled/jira-context
+  - name: default/jira-context
     tools: [windsurf]
 
-  # Install from a tap
+  # Install from a custom tap
   - name: mycompany/internal-standards
 
 # Default scope (local or global)
@@ -189,7 +189,7 @@ scope: local
 | Type | Description | Supported Tools |
 |------|-------------|-----------------|
 | `rules` | Coding standards and guidelines | All |
-| `workflow` | Multi-step automation workflows | Windsurf |
+| `workflow` | Multi-step automation workflows | Windsurf, Claude Code |
 | `skill` | Reusable skill definitions | Windsurf |
 | `bin` | Executable scripts | Windsurf |
 

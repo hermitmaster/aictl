@@ -19,8 +19,8 @@ taps:
     url: https://github.com/mycompany/resources
 
 install:
-  - name: bundled/typescript-rules
-  - name: bundled/jira-context
+  - name: default/typescript-rules
+  - name: default/jira-context
     tools: [windsurf]
 
 scope: local
@@ -51,8 +51,8 @@ scope: local
 	if len(cfg.Install) != 2 {
 		t.Errorf("Install count = %d, want 2", len(cfg.Install))
 	}
-	if cfg.Install[0].Name != "bundled/typescript-rules" {
-		t.Errorf("Install[0].Name = %s, want bundled/typescript-rules", cfg.Install[0].Name)
+	if cfg.Install[0].Name != "default/typescript-rules" {
+		t.Errorf("Install[0].Name = %s, want default/typescript-rules", cfg.Install[0].Name)
 	}
 	if len(cfg.Install[1].Tools) != 1 {
 		t.Errorf("Install[1].Tools count = %d, want 1", len(cfg.Install[1].Tools))
@@ -74,7 +74,7 @@ func TestValidate(t *testing.T) {
 			cfg: AiConfig{
 				Tools: []string{"windsurf", "cursor"},
 				Install: []InstallConfig{
-					{Name: "bundled/test"},
+					{Name: "default/test"},
 				},
 			},
 			wantErr: false,
@@ -83,7 +83,7 @@ func TestValidate(t *testing.T) {
 			name: "missing tools",
 			cfg: AiConfig{
 				Install: []InstallConfig{
-					{Name: "bundled/test"},
+					{Name: "default/test"},
 				},
 			},
 			wantErr: true,
@@ -93,7 +93,7 @@ func TestValidate(t *testing.T) {
 			cfg: AiConfig{
 				Tools: []string{"invalid-tool"},
 				Install: []InstallConfig{
-					{Name: "bundled/test"},
+					{Name: "default/test"},
 				},
 			},
 			wantErr: true,
@@ -103,7 +103,7 @@ func TestValidate(t *testing.T) {
 			cfg: AiConfig{
 				Tools: []string{"windsurf"},
 				Install: []InstallConfig{
-					{Name: "bundled/test", Tools: []string{"cursor"}},
+					{Name: "default/test", Tools: []string{"cursor"}},
 				},
 			},
 			wantErr: true,
@@ -113,7 +113,7 @@ func TestValidate(t *testing.T) {
 			cfg: AiConfig{
 				Tools: []string{"windsurf"},
 				Install: []InstallConfig{
-					{Name: "bundled/test"},
+					{Name: "default/test"},
 				},
 				Scope: "invalid",
 			},
@@ -168,7 +168,7 @@ func TestGetToolsForResource(t *testing.T) {
 	}
 
 	t.Run("uses global tools when resource has none", func(t *testing.T) {
-		inst := InstallConfig{Name: "bundled/test"}
+		inst := InstallConfig{Name: "default/test"}
 		tools := cfg.GetToolsForResource(inst)
 		if len(tools) != 2 {
 			t.Errorf("Expected 2 tools, got %d", len(tools))
@@ -176,7 +176,7 @@ func TestGetToolsForResource(t *testing.T) {
 	})
 
 	t.Run("uses resource tools when specified", func(t *testing.T) {
-		inst := InstallConfig{Name: "bundled/test", Tools: []string{"windsurf"}}
+		inst := InstallConfig{Name: "default/test", Tools: []string{"windsurf"}}
 		tools := cfg.GetToolsForResource(inst)
 		if len(tools) != 1 {
 			t.Errorf("Expected 1 tool, got %d", len(tools))
@@ -220,7 +220,7 @@ func TestSave(t *testing.T) {
 	cfg := &AiConfig{
 		Tools: []string{"windsurf", "cursor"},
 		Install: []InstallConfig{
-			{Name: "bundled/test"},
+			{Name: "default/test"},
 		},
 		Scope: "local",
 	}
@@ -246,7 +246,7 @@ func TestSave(t *testing.T) {
 func TestNewFromState(t *testing.T) {
 	tools := []string{"windsurf", "cursor"}
 	install := []InstallConfig{
-		{Name: "bundled/test", Tools: []string{"windsurf"}},
+		{Name: "default/test", Tools: []string{"windsurf"}},
 	}
 
 	cfg := NewFromState(tools, install, "global")

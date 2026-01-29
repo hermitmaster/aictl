@@ -14,7 +14,6 @@ import (
 	"github.com/hermitmaster/aictl/internal/resource"
 	"github.com/hermitmaster/aictl/internal/state"
 	"github.com/hermitmaster/aictl/internal/tap"
-	"github.com/hermitmaster/aictl/resources"
 )
 
 var bundleCmd = &cobra.Command{
@@ -152,25 +151,21 @@ func runBundle(cmd *cobra.Command, args []string) error {
 		var content string
 		var loadErr error
 
-		if source == "bundled" {
-			res, content, loadErr = resources.LoadBundled(name)
-		} else {
-			// Try to load from a tap
-			tapMgr, err := tap.NewManager(appCfg)
-			if err != nil {
-				color.Red("✗ Error initializing tap manager: %v", err)
-				failCount++
-				continue
-			}
-
-			if !tapMgr.Exists(source) {
-				color.Red("✗ Unknown source '%s' (not a tap)", source)
-				failCount++
-				continue
-			}
-
-			res, content, loadErr = tapMgr.LoadResource(source, name)
+		// Load from a tap
+		loadTapMgr, err := tap.NewManager(appCfg)
+		if err != nil {
+			color.Red("✗ Error initializing tap manager: %v", err)
+			failCount++
+			continue
 		}
+
+		if !loadTapMgr.Exists(source) {
+			color.Red("✗ Unknown source '%s' (not a tap)", source)
+			failCount++
+			continue
+		}
+
+		res, content, loadErr = loadTapMgr.LoadResource(source, name)
 
 		if loadErr != nil {
 			color.Red("✗ Error loading %s: %v", inst.Name, loadErr)
@@ -224,7 +219,7 @@ func runBundle(cmd *cobra.Command, args []string) error {
 			var installErr error
 
 			// Use full Install method for multi-file resources (which have SourcePath set)
-			// Use InstallFromReader for bundled resources (content passed as string)
+			// Use InstallFromReader for single-file resources (content passed as string)
 			if res.IsMultiFile() && res.SourcePath != "" {
 				installedFiles, installErr = inst.Install(res, global, forceFlag)
 			} else {
@@ -237,6 +232,8 @@ func runBundle(cmd *cobra.Command, args []string) error {
 				case *installer.AiderInstaller:
 					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
 				case *installer.ContinueInstaller:
+					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
+				case *installer.ClaudeCodeInstaller:
 					destPath, installErr = typedInst.InstallFromReader(res, strings.NewReader(content), global, forceFlag)
 				default:
 					continue

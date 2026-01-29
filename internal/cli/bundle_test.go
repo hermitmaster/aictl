@@ -590,9 +590,9 @@ func TestBundleResourceParsing(t *testing.T) {
 			expectedName:   "my-workflow",
 		},
 		{
-			name:           "bundled_resource",
-			resourceRef:    "bundled/git-commit",
-			expectedSource: "bundled",
+			name:           "default_registry_resource",
+			resourceRef:    "default/git-commit",
+			expectedSource: "default",
 			expectedName:   "git-commit",
 		},
 		{
